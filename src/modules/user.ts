@@ -70,6 +70,32 @@ export = {
     res.status(200).json(resp);
   },
 
+  async changePassword(req: Request, res: Response) {
+    const { oldPassword, newPassword } = req.body;
+    const { userData } = req;
+
+    const user = await prisma.tb_user.findFirst({
+      where: {
+        id: userData.id,
+      },
+    });
+
+    if (!user || user.deleted_at !== null)
+      return res.status(401).send({ error: "Usuário não encontrado!" });
+
+    if (!(await bcrypt.compare(oldPassword, user.password)))
+      return res.status(401).send({ error: "Senha incorreta" });
+
+    await prisma.tb_user.update({
+      where: { id: user.id },
+      data: {
+        password: await bcrypt.hash(newPassword, 10),
+      },
+    });
+
+    return res.status(201).send({ success: "Senha atualizada com sucesso!" });
+  },
+
   async deleteUser(req: Request, res: Response) {
     const { id } = req.params;
 
