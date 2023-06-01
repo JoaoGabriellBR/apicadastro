@@ -1,8 +1,11 @@
 import { PrismaClient } from "@prisma/client";
-import bcrypt from 'bcryptjs';
-import { Request, Response } from 'express';
+import bcrypt from "bcryptjs";
+import jwt, { Secret } from "jsonwebtoken";
+import { Request, Response } from "express";
 
 const prisma = new PrismaClient();
+
+const secret = process.env.AUTH_SECRET;
 
 export = {
   async createUser(req: Request, res: Response) {
@@ -32,8 +35,8 @@ export = {
         id: true,
         name: true,
         email: true,
-        password: false
-      }
+        password: false,
+      },
     });
 
     res.status(200).json(resp);
@@ -91,10 +94,11 @@ export = {
     const { userData } = req;
 
     const userExists = await prisma.tb_user.findUnique({
-      where: { id: userData?.id }
-    })
+      where: { id: userData?.id },
+    });
 
-    if(!userExists) return res.status(400).json({ error: "Usuário não encontrado!" })
+    if (!userExists)
+      return res.status(400).json({ error: "Usuário não encontrado!" });
 
     const resp = await prisma.tb_user.findFirst({
       where: { id: userExists?.id },
@@ -107,5 +111,32 @@ export = {
     });
 
     res.status(200).json(resp);
+  },
+
+  async login(req: Request, res: Response) {
+    const { email, password } = req.body;
+
+    const user = await prisma.tb_user.findFirst({
+      where: {
+        email,
+      },
+    });
+
+    if (!user || user.deleted_at !== null)
+      return res.status(401).send({ error: "Usuário não encontrado!" });
+
+    if (!(await bcrypt.compare(password, user.password)))
+      return res.status(401).send({ error: "Senha incorreta!" });
+
+    const userWithoutPasssword = await prisma.tb_user.findFirst({
+      where: { email },
+      select: {
+        email: true,
+        password: false,
+      },
+    });
+
+    const token = jwt.sign({ ...user }, secret as Secret);
+    res.status(200).send({ token, user: userWithoutPasssword });
   },
 };
