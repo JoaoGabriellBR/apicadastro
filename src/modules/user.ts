@@ -7,6 +7,10 @@ const prisma = new PrismaClient();
 
 const secret = process.env.AUTH_SECRET;
 
+interface CustomRequest extends Request {
+  userData: any;
+}
+
 export = {
   async createUser(req: Request, res: Response) {
     const { name, email, password } = req.body;
@@ -72,7 +76,7 @@ export = {
 
   async changePassword(req: Request, res: Response) {
     const { oldPassword, newPassword } = req.body;
-    const { userData } = req;
+    const { userData } = req as CustomRequest;
 
     const user = await prisma.tb_user.findFirst({
       where: {
@@ -116,7 +120,7 @@ export = {
     res.status(200).send({ success: "Usuário excluído com sucesso!" });
   },
 
-  async getMe(req: any, res: any) {
+  async getMe(req: Request, res: Response) {
     const { userData } = req;
 
     const userExists = await prisma.tb_user.findUnique({
