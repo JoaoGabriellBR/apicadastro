@@ -51,7 +51,7 @@ export = {
     const { name, email } = req.body;
 
     const userExists = await prisma.tb_user.findUnique({
-      where: { id: id },
+      where: { id: parseInt(id) },
     });
 
     if (!userExists)
@@ -104,7 +104,7 @@ export = {
     const { id } = req.params;
 
     const userExists = await prisma.tb_user.findUnique({
-      where: { id: id },
+      where: { id: parseInt(id) },
     });
 
     if (!userExists)
@@ -120,8 +120,31 @@ export = {
     res.status(200).send({ success: "Usuário excluído com sucesso!" });
   },
 
+  async getUser(req: Request, res: Response) {
+    const { id } = req.params;
+
+    const userExists = await prisma.tb_user.findFirst({
+      where: { id: parseInt(id) },
+    });
+
+    if (!userExists || userExists.deleted_at !== null)
+      return res.status(401).send({ error: "Usuário não encontrado" });
+
+    const response = await prisma.tb_user.findFirst({
+      where: { id: userExists?.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password: false,
+      },
+    });
+
+    res.status(201).json(response);
+  },
+
   async getMe(req: Request, res: Response) {
-    const { userData } = req;
+    const { userData } = req as CustomRequest;
 
     const userExists = await prisma.tb_user.findUnique({
       where: { id: userData?.id },
