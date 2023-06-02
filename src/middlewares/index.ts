@@ -9,18 +9,20 @@ declare module "express" {
 
 const secret = process.env.AUTH_SECRET;
 
-export = {
-  async decodeUserToken(req: Request, res: Response, next: NextFunction) {
-    const { authorization } = req.headers;
+export default async function decodeUserToken(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const { authorization } = req.headers;
 
-    if (!authorization) return res.status(401).send({ error: "Unauthorized" });
+  if (!authorization) return res.status(401).send({ error: "Unauthorized" });
 
-    try {
-      const decodedToken = jwt.verify(authorization, secret as Secret);
-      req.userData = decodedToken;
-      next();
-    } catch (error) {
-      return res.status(401).send({ error: "Unauthorized" });
-    }
-  },
-};
+  try {
+    const decodedToken = jwt.verify(authorization, secret as Secret);
+    req.userData = decodedToken;
+    next();
+  } catch (error) {
+    return res.status(401).send({ error: "Unauthorized" });
+  }
+}

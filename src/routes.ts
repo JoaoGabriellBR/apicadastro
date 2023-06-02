@@ -1,9 +1,8 @@
 import { Router } from "express";
+import decodeUserToken from "./middlewares";
 import User from "./modules/user";
-import { decode } from "jsonwebtoken";
 
 const routes = Router();
-const { decodeUserToken } = require("./middlewares");
 
 routes.get("/user", User.getMe);
 routes.get("/user/:id", decodeUserToken, User.getUser)
